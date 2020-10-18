@@ -1,0 +1,3 @@
+/climatica/*.ipynb
+/climatica/config.py
+*.ipynb_checkpoints/
