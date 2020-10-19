@@ -17,8 +17,6 @@ class DefineNino:
         """
         Help to grab Nino region coords for SST bounds.
         Note: Longitudes in CESM ocean model output are in 360 degree coords.
-        Args:
-            nino (str): Nino SST region in Pacific (all lowercase).
         """
         n = {
              'nino12': np.array([-10, 0, pacific_lon(-90, to180=False), pacific_lon(-80, to180=False)]),
