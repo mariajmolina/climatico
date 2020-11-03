@@ -120,64 +120,132 @@ class DefineNino:
         """
         Check percent of data set that contains nino and nina events.
         Args:
-            index (xarray data array): Index.
+            index (numpy array): Index eagerly loaded as numpy array (for speed).
             cutoff (float): The +/- nino threshold. Defaults to ``0.4`` for nino sst regions.
                             Use ``0.5`` for oni.
         """
-        print("Percentage of El Nino events = {:0.1f}%".format(100 * (index.where(index>=cutoff).count() / index.count()).values))
-        print("Percentage of La Nina events = {:0.1f}%".format(100 * (index.where(index<=-cutoff).count() / index.count()).values))
+        # previous code for xarray data array option
+        # print("Percentage of El Nino events = {:0.1f}%".format(100 * (index.where(index>=cutoff).count() / index.count()).values))
+        # print("Percentage of La Nina events = {:0.1f}%".format(100 * (index.where(index<=-cutoff).count() / index.count()).values))
+        print("Percentage of El Nino events = {:0.1f}%".format(
+            100 * np.around(np.count_nonzero((np.where(index>=cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
+        print("Percentage of La Nina events = {:0.1f}%".format(
+            100 * np.around(np.count_nonzero((np.where(index<=-cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
+
+    def check_strong_nino(self, index, cutoff=0.4, strong_cutoff=1.5):
+        """
+        Check percent of data set that contains nino and nina events.
+        Args:
+            index (numpy array): Index eagerly loaded as numpy array (for speed).
+            cutoff (float): The +/- nino threshold. Defaults to ``0.4`` for nino sst regions.
+                            Use ``0.5`` for oni.
+            strong_cutoff (float): The +/- strong nino threshold. Defaults to ``1.5``.
+        """
+        # previous code for xarray data array option
+        # print("Percentage of Strong El Nino events = {:0.1f}%".format(
+        #     100 * (index.where(index>=strong_cutoff).count() / np.count_nonzero(~np.isnan(index))).values))
+        # print("Percentage of Strong La Nina events = {:0.1f}%".format(
+        #     100 * (index.where(index<=-strong_cutoff).count() / np.count_nonzero(~np.isnan(index))).values))
+        # print("Percentage of Strong El Nino from All El Nino = {:0.1f}%".format(
+        #     100 * (index.where(index>=strong_cutoff).count() / index.where(index>=cutoff).count()).values))
+        # print("Percentage of Strong La Nina from All La Nina = {:0.1f}%".format(
+        #     100 * (index.where(index<=-strong_cutoff).count() / index.where(index<=-cutoff).count()).values))
+        print("Percentage of Strong El Nino events = {:0.1f}%".format(
+            100 * np.around(np.count_nonzero((np.where(index>=strong_cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
+        print("Percentage of Strong La Nina events = {:0.1f}%".format(
+            100 * np.around(np.count_nonzero((np.where(index<=-strong_cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
+        print("Percentage of Strong El Nino from All El Nino = {:0.1f}%".format(
+            100 * (np.count_nonzero((np.where(index>=strong_cutoff, 1, 0))) / np.count_nonzero((np.where(index>=cutoff, 1, 0))))))
+        print("Percentage of Strong La Nina from All La Nina = {:0.1f}%".format(
+            100 * (np.count_nonzero((np.where(index<=-strong_cutoff, 1, 0))) / np.count_nonzero((np.where(index<=-cutoff, 1, 0))))))
 
     def fast_plot(self, index, cutoff=0.4):
         """
         Quick visualization of index.
         Args:
-            index (xarray data array): Index.
+            index (numpy array): Index eagerly loaded as numpy array (for speed).
             cutoff (float): The +/- nino threshold. Defaults to ``0.4`` for nino sst regions.
                             Use ``0.5`` for oni.
         """
-        index.plot(size=12)
+        # previous code for xarray data array
+        # index.plot(size=12)
+        plt.plot(index)
         plt.margins(x=0)
         plt.axhline(0,color='black',lw=0.5)
         plt.axhline(cutoff,color='black',linewidth=0.5,linestyle='dotted')
         plt.axhline(-cutoff,color='black',linewidth=0.5,linestyle='dotted')
+        plt.xlabel('Months')
+        plt.ylabel('Index')
         plt.show()
-        
-    def shaded_plot(self, index, cutoff=0.4, title=None):
+
+    def shaded_plot(self, index, cutoff=0.4, strong_cutoff=1.5, title=None, savefig=None,
+                    xticks=[0,1800,3600,5400,7200,9000], xticklabels=[0,150,300,450,600,750]):
         """
         Quick shaded visualization of index.
         Args:
-            index (xarray data array): Index.
+            index (numpy array): Index eagerly loaded as numpy array (for speed).
             cutoff (float): The +/- nino threshold. Defaults to ``0.4`` for nino sst regions.
                             Use ``0.5`` for oni.
             title (str): Title for the figure.
+            savefig (str): Directory and figure name to save.
+            xticks (list): X ticks. Defaults to freshwater hosing experiment time.
+            xticklabels (list): X tick labels. Defaults to freshwater hosing experiment time.
         """
         fig = plt.figure(figsize=(12, 8))
-        plt.fill_between(index.time.values, index.where(index>=cutoff).values, cutoff, color='r', alpha=0.8)
-        plt.fill_between(index.time.values, index.where(index<=-cutoff).values, -cutoff, color='b', alpha=0.3)
-        index.plot(color='black',lw=0.2)
+        # plt.fill_between(index.time.values, index.where(index>=cutoff).values, cutoff, color='r', alpha=0.8)
+        # plt.fill_between(index.time.values, index.where(index<=-cutoff).values, -cutoff, color='b', alpha=0.3)
+        # index.plot(color='black',lw=0.2)
+        plt.fill_between(range(index.shape[0]), np.where(index>=cutoff,index,np.nan), cutoff, color='r', alpha=0.8); 
+        plt.fill_between(range(index.shape[0]), np.where(index<=-cutoff,index,np.nan), -cutoff, color='b', alpha=0.3)
+        plt.plot(index, c='k', lw=0.15)
         plt.axhline(0,color='black',lw=0.5)
         plt.axhline(cutoff,color='black',linewidth=0.5,linestyle='dotted')
         plt.axhline(-cutoff,color='black',linewidth=0.5,linestyle='dotted')
+        plt.axhline(strong_cutoff,color='black',linewidth=0.25,linestyle='dotted')
+        plt.axhline(-strong_cutoff,color='black',linewidth=0.25,linestyle='dotted')
+        plt.xticks(xticks, xticklabels)
+        plt.xlabel('Years')
+        plt.ylabel('Index')
         if title:
             plt.title(title)
         plt.margins(x=0)
-        plt.show()
+        if savefig:
+            plt.savefig(savefig, bbox_inches='tight', dpi=200)
+            return plt.show()
+        if not savefig:
+            return plt.show()
 
-    def nino_cumsum(self, index, cutoff=0.4, title=None):
+    def nino_cumsum(self, index, cutoff=0.4, title=None, savefig=None, 
+                    xticks=[0,1800,3600,5400,7200,9000], xticklabels=[0,150,300,450,600,750]):
         """
         Cumulative sum of El Nino, La Nino, and Neutral events over the index data.
         Args:
-            index (xarray data array):
+            index (numpy array): Index eagerly loaded as numpy array (for speed).
             cutoff (float): The +/- nino threshold. Defaults to ``0.4`` for nino sst regions.
                             Use ``0.5`` for oni.
-            title (str): Title for the figure.
+            title (str): Title for the figure. Defaults to None.
+            savefig (str): Directory and figure name to save. Defaults to None.
+            xticks (list): X ticks. Defaults to freshwater hosing experiment time.
+            xticklabels (list): X tick labels. Defaults to freshwater hosing experiment time.
         """
-        fig = plt.figure(figsize=(12, 8))
+        fig = plt.figure(figsize=(10, 6))
         ax = plt.axes([0.,0.,1.,1.])
-        index.where(index>=cutoff, 0).where(index<cutoff, 1).cumsum(dim='time').plot(ax=ax, c='r')
-        index.where(index<=-cutoff, 0).where(index>-cutoff, 1).cumsum(dim='time').plot(ax=ax, c='b')
-        index.where((index<cutoff)&(index>-cutoff), 0).where((index>=cutoff)|(index<=-cutoff), 1).cumsum(dim='time').plot(ax=ax, c='k')
+        # previous xarray data array
+        # index.where(index>=cutoff, 0).where(index<cutoff, 1).cumsum(dim='time').plot(ax=ax, c='r')
+        # index.where(index<=-cutoff, 0).where(index>-cutoff, 1).cumsum(dim='time').plot(ax=ax, c='b')
+        # index.where((index<cutoff)&(index>-cutoff), 0).where((index>=cutoff)|(index<=-cutoff), 1).cumsum(dim='time').plot(ax=ax, c='k')
+        ax.plot(np.cumsum(np.where(index>=cutoff, 1, 0)), c='r')
+        ax.plot(np.cumsum(np.where(index<=-cutoff, 1, 0)), c='b')
+        ax.plot(np.cumsum(np.where((index<cutoff)&(index>-cutoff), 1, 0)), c='k')
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticklabels)
+        ax.set_xlabel('Years')
+        ax.set_ylabel('Index')
         if title:
-            plt.title(title)
-        plt.margins(x=0)
-        plt.show()
+            ax.set_title(title)
+        ax.margins(x=0)
+        if savefig:
+            plt.savefig(savefig, bbox_inches='tight', dpi=200)
+            return plt.show()
+        if not savefig:
+            return plt.show()
