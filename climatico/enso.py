@@ -10,12 +10,16 @@ class DefineNino:
     Args:
         nino (str): Nino SST region in Pacific (all lowercase). E.g., ``nino34``.
                     Options include nino12, nino3, nino34, nino4, atl3.
+        lats (str): Name of regular/irregular grid latitudes (should have two dims). Defaults to ``TLAT``.
+        lons (str): Name of regular/irregular grid longitudes (should have two dims). Defaults to ``TLONG``.
     """
-    def __init__(self, nino):
+    def __init__(self, nino, lats='TLAT', lons='TLONG'):
         """
         Initialize.
         """
         self.ninodefined = nino
+        self.lats = lats
+        self.lons = lons
 
     def nino_dict(self):
         """
@@ -35,7 +39,7 @@ class DefineNino:
         except:
             raise ValueError('Not a Nino SST region! Make sure input is all lowercase.')
 
-    def nino(self, data, lats='TLAT', lons='TLONG'):
+    def nino(self, data):
         """
         Using Nino regional bounds in the Pacific for SST extraction from
         nino_dict().
@@ -44,14 +48,12 @@ class DefineNino:
               be specified in function input.
         Args:
             data (xarray dataset): SST data.
-            lats (str): Name of irregular grid latitudes (should have two dims). Defaults to ``TLAT``.
-            lons (str): Name of irregular grid longitudes (should have two dims). Defaults to ``TLONG``.
         """
         nino_coords = self.nino_dict()
-        return data.where((data[lats]<nino_coords[1]) & (data[lats]>nino_coords[0]) & \
-                          (data[lons]>nino_coords[2]) & (data[lons]<nino_coords[3]), drop=True)
+        return data.where((data[self.lats]<nino_coords[1]) & (data[self.lats]>nino_coords[0]) & \
+                          (data[self.lons]>nino_coords[2]) & (data[self.lons]<nino_coords[3]), drop=True)
 
-    def roll_climo(self, data, month, yrsroll=30, centered=True):
+    def roll_climo(self, data, month, yrsroll=30, centered=True, time='time'):
         """
         Creating rolling 30-year mean climatology.
         Args:
@@ -59,10 +61,11 @@ class DefineNino:
             month (int): Month for climatology.
             yrsroll (int): Number of years for climatology. Defaults to ``30``.
             centered (boolean): Whether the average is centered. Defaults to ``True``.
+            time (str): Time coordinate name. Defaults to ``time``.
         """
-        return data[data['time.month']==month].rolling(time=yrsroll, min_periods=1, center=centered).mean()
+        return data[data[f'{time}.month']==month].rolling(time=yrsroll, min_periods=1, center=centered).mean()
     
-    def monthly_climo(self, data, yrsroll=30, centered=True):
+    def monthly_climo(self, data, yrsroll=30, centered=True, time='time'):
         """
         Create rolling mean climatology. 
         Performs what xr.DataArray.groupby('time.month').rolling() would do.
@@ -70,22 +73,23 @@ class DefineNino:
             data (xarray data array): Weighted mean variable.
             yrsroll (int): Number of years for climatology. Defaults to ``30``.
             centered (boolean): Whether the average is centered. Defaults to ``True``.
+            time (str): Time coordinate name. Defaults to ``time``.
         Returns:
             nino_climo with rolling mean computed along months.
         """
-        jan = self.roll_climo(data, month=1, yrsroll=yrsroll, centered=centered)
-        feb = self.roll_climo(data, month=2, yrsroll=yrsroll, centered=centered)
-        mar = self.roll_climo(data, month=3, yrsroll=yrsroll, centered=centered)
-        apr = self.roll_climo(data, month=4, yrsroll=yrsroll, centered=centered)
-        may = self.roll_climo(data, month=5, yrsroll=yrsroll, centered=centered)
-        jun = self.roll_climo(data, month=6, yrsroll=yrsroll, centered=centered)
-        jul = self.roll_climo(data, month=7, yrsroll=yrsroll, centered=centered)
-        aug = self.roll_climo(data, month=8, yrsroll=yrsroll, centered=centered)
-        sep = self.roll_climo(data, month=9, yrsroll=yrsroll, centered=centered)
-        boo = self.roll_climo(data, month=10, yrsroll=yrsroll, centered=centered)
-        nov = self.roll_climo(data, month=11, yrsroll=yrsroll, centered=centered)
-        dec = self.roll_climo(data, month=12, yrsroll=yrsroll, centered=centered)
-        nino_climo = xr.concat([jan,feb,mar,apr,may,jun,jul,aug,sep,boo,nov,dec], dim='time').sortby('time')
+        jan = self.roll_climo(data, month=1, yrsroll=yrsroll, centered=centered, time=time)
+        feb = self.roll_climo(data, month=2, yrsroll=yrsroll, centered=centered, time=time)
+        mar = self.roll_climo(data, month=3, yrsroll=yrsroll, centered=centered, time=time)
+        apr = self.roll_climo(data, month=4, yrsroll=yrsroll, centered=centered, time=time)
+        may = self.roll_climo(data, month=5, yrsroll=yrsroll, centered=centered, time=time)
+        jun = self.roll_climo(data, month=6, yrsroll=yrsroll, centered=centered, time=time)
+        jul = self.roll_climo(data, month=7, yrsroll=yrsroll, centered=centered, time=time)
+        aug = self.roll_climo(data, month=8, yrsroll=yrsroll, centered=centered, time=time)
+        sep = self.roll_climo(data, month=9, yrsroll=yrsroll, centered=centered, time=time)
+        boo = self.roll_climo(data, month=10, yrsroll=yrsroll, centered=centered, time=time)
+        nov = self.roll_climo(data, month=11, yrsroll=yrsroll, centered=centered, time=time)
+        dec = self.roll_climo(data, month=12, yrsroll=yrsroll, centered=centered, time=time)
+        nino_climo = xr.concat([jan,feb,mar,apr,may,jun,jul,aug,sep,boo,nov,dec], dim=time).sortby(time)
         return nino_climo
     
     def compute_index(self, data, climo, runningmean=3):
@@ -98,23 +102,24 @@ class DefineNino:
                                Select 5 for Nino regions and 3 for ONI.
         """
         anom = data - climo
+        if runningmean == 5:
+            anom = anom.chunk({'time': 12})
         anom_rolling = anom.rolling(time=runningmean, min_periods=1, center=False).mean()
         std = anom_rolling.std()
         nino_index = (anom_rolling / std)
         return nino_index
 
-    def check_nino(self, data, lats='TLAT', lons='TLONG'):
+    def check_nino(self, data):
         """
         Quick sanity check function for regional bounds.
         Args:
             data (xarray dataset): SST data.
-            lats (str): Name of irregular grid latitudes (should have two dims). Defaults to ``TLAT``.
-            lons (str): Name of irregular grid longitudes (should have two dims). Defaults to ``TLONG``.
         """
         print('Check we have the correct spatial extent')
-        print('Latitude range: {:.1f} - {:.1f}'.format(data[lats].min().values, data[lats].max().values))
-        print('Longitude range: {:.1f} - {:.1f}'.format(pacific_lon(data[lons].min().values), 
-                                                        pacific_lon(data[lons].max().values)))
+        print('Latitude range: {:.1f} - {:.1f}'.format(data[self.lats].min().values, 
+                                                       data[self.lats].max().values))
+        print('Longitude range: {:.1f} - {:.1f}'.format(pacific_lon(data[self.lons].min().values), 
+                                                        pacific_lon(data[self.lons].max().values)))
 
     def check_nino_percentages(self, index, cutoff=0.4):
         """
@@ -194,7 +199,7 @@ class DefineNino:
         fig = plt.figure(figsize=(12, 8))
         # plt.fill_between(index.time.values, index.where(index>=cutoff).values, cutoff, color='r', alpha=0.8)
         # plt.fill_between(index.time.values, index.where(index<=-cutoff).values, -cutoff, color='b', alpha=0.3)
-        # index.plot(color='black',lw=0.2)
+        # index.plot(color='black', lw=0.2)
         plt.fill_between(range(index.shape[0]), np.where(index>=cutoff,index,np.nan), cutoff, color='r', alpha=0.8); 
         plt.fill_between(range(index.shape[0]), np.where(index<=-cutoff,index,np.nan), -cutoff, color='b', alpha=0.3)
         plt.plot(index, c='k', lw=0.15)
