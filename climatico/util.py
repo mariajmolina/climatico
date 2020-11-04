@@ -15,9 +15,9 @@ def pacific_lon(longitude, to180=True):
         if longitude > 180:
             return longitude-360
     if not to180:
-        if longitude < 0:
+        if longitude <= 0:
             return longitude+360
-        if longitude >= 0:
+        if longitude > 0:
             return longitude
 
 def weighted_mean(da, lat_name):
