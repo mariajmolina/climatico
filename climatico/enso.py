@@ -140,12 +140,12 @@ class DefineNino:
         index = self.compute_index(data=nino_mean, climo=climo)
         index = index.values
         # extract enso events
-        if enso_event == "nino":
-            enso_events = da[self.sst_name].isel(time=np.where(index>=self.cutoff)[0])
-        if enso_event == "nina":
-            enso_events = da[self.sst_name].isel(time=np.where(index<=-self.cutoff)[0])
-        if enso_event == "neutral":
-            enso_events = da[self.sst_name].isel(time=np.where((index<self.cutoff)&(index>-self.cutoff))[0])
+        if self.enso_event == "nino":
+            enso_events = da.isel(time=np.where(index>=self.cutoff)[0])
+        if self.enso_event == "nina":
+            enso_events = da.isel(time=np.where(index<=-self.cutoff)[0])
+        if self.enso_event == "neutral":
+            enso_events = da.isel(time=np.where((index<self.cutoff)&(index>-self.cutoff))[0])
         return enso_events
 
     def check_nino(self, data):
@@ -202,7 +202,8 @@ class DefineNino:
         plt.show()
 
     def shaded_plot(self, index, title=None, savefig=None,
-                    xticks=[0,1800,3600,5400,7200,9000], xticklabels=[0,150,300,450,600,750]):
+                    xticks=[0,1800,3600,5400,7200,9000], xticklabels=[0,150,300,450,600,750],
+                    add_yr_lines=None):
         """
         Quick shaded visualization of index.
         Args:
@@ -211,6 +212,8 @@ class DefineNino:
             savefig (str): Directory and figure name to save.
             xticks (list): X ticks. Defaults to freshwater hosing experiment time.
             xticklabels (list): X tick labels. Defaults to freshwater hosing experiment time.
+            add_yr_lines (float): Add vertical lines at locations of freshwater hosing addition or reduction.
+                                  Defaults to ``None``. Should be e.g., ``[6000]``.
         """
         fig = plt.figure(figsize=(12, 8))
         plt.fill_between(range(index.shape[0]), np.where(index>=self.cutoff,index,np.nan), self.cutoff, color='r', alpha=0.8); 
@@ -224,6 +227,9 @@ class DefineNino:
         plt.xticks(xticks, xticklabels)
         plt.xlabel('Years')
         plt.ylabel('Index')
+        if add_yr_lines:
+            for flux in add_yr_lines:
+                plt.axvline(flux, color='k', lw=1.5)
         if title:
             plt.title(title)
         plt.margins(x=0)
@@ -234,7 +240,8 @@ class DefineNino:
             return plt.show()
 
     def nino_cumsum(self, index, title=None, savefig=None, 
-                    xticks=[0,1800,3600,5400,7200,9000], xticklabels=[0,150,300,450,600,750]):
+                    xticks=[0,1800,3600,5400,7200,9000], xticklabels=[0,150,300,450,600,750],
+                    add_yr_lines=None):
         """
         Cumulative sum of El Nino, La Nino, and Neutral events over the index data.
         Args:
@@ -243,6 +250,8 @@ class DefineNino:
             savefig (str): Directory and figure name to save. Defaults to None.
             xticks (list): X ticks. Defaults to freshwater hosing experiment time.
             xticklabels (list): X tick labels. Defaults to freshwater hosing experiment time.
+            add_yr_lines (float): Add vertical lines at locations of freshwater hosing addition or reduction.
+                                  Defaults to ``None``. Should be e.g., ``[6000]``.
         """
         fig = plt.figure(figsize=(10, 6))
         ax = plt.axes([0.,0.,1.,1.])
@@ -253,6 +262,9 @@ class DefineNino:
         ax.set_xticklabels(xticklabels)
         ax.set_xlabel('Years')
         ax.set_ylabel('Index')
+        if add_yr_lines:
+            for flux in add_yr_lines:
+                ax.axvline(flux, color='k', lw=1.5)
         if title:
             ax.set_title(title)
         ax.margins(x=0)
