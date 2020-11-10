@@ -107,6 +107,17 @@ class DefineNino:
             nino_climo = xr.concat([jan,feb,mar,apr,may,jun,jul,aug,sep,boo,nov,dec], dim=time).sortby(time)
         return nino_climo
     
+    def monthly_climo_control(self, data, time='time'):
+        """
+        Create fixed mean climatology.
+        Args:
+            data (xarray data array): Weighted mean variable.
+            time (str): Time coordinate name. Defaults to ``time``.
+        Returns:
+            Fixed period weighted mean climatology.
+        """
+        return data.groupby('time.month').mean('time', skipna=True)
+    
     def compute_index(self, data, climo):
         """
         Compute nino index (sst based).
