@@ -80,7 +80,7 @@ class DefineNino:
             time (str): Time coordinate name. Defaults to ``time``.
         """
         return data[data[f'{time}.month']==month].rolling(time=yrsroll, min_periods=1, center=centered).mean()
-    
+
     def monthly_climo(self, data, yrsroll=30, centered=True, time='time'):
         """
         Create rolling mean climatology. 
@@ -110,7 +110,7 @@ class DefineNino:
             dec = self.roll_climo(data, month=12, yrsroll=yrsroll, centered=centered, time=time)
             nino_climo = xr.concat([jan,feb,mar,apr,may,jun,jul,aug,sep,boo,nov,dec], dim=time).sortby(time)
         return nino_climo
-    
+
     def monthly_climo_control(self, data):
         """
         Create fixed mean climatology.
@@ -121,6 +121,20 @@ class DefineNino:
         """
         return data.groupby('time.month').mean('time', skipna=True)
     
+    def nino_variance(self, data, years=30, centered=True):
+        """
+        Compute Nino index variance from monthly index.
+        Note: 
+            Chunking issues arise with this function sometimes, particularly with long
+            simulations. Use ``.chunk({'time': 1200})`` when feeding data into this
+            function if chunking issues come up.
+        Args:
+            data (xarray data array): Nino index. 
+            years (int): Number of years for running window for variance calculation.
+            centered (boolean): Whether the average is centered. Defaults to ``True``.
+        """
+        return data.rolling(time=years*12, min_periods=1, center=centered).std()
+
     def compute_index(self, data, climo, linear_detrend=False):
         """
         Compute nino index (sst based).
