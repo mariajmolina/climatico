@@ -4,6 +4,7 @@ import pandas as pd
 from util import pacific_lon, weighted_mean
 import matplotlib.pyplot as plt
 import warnings
+from scipy import signal
 
 class DefineNino:
     """
@@ -120,7 +121,7 @@ class DefineNino:
         """
         return data.groupby('time.month').mean('time', skipna=True)
     
-    def compute_index(self, data, climo):
+    def compute_index(self, data, climo, linear_detrend=False):
         """
         Compute nino index (sst based).
         Args:
@@ -129,6 +130,9 @@ class DefineNino:
         """
         # create anomalies
         anom = data - climo
+        if linear_detrend:
+            # if linearly detrending anomalies
+            anom = xr.apply_ufunc(signal.detrend, anom.load())
         if self.runningmean == 5:
             # for performance
             anom = anom.chunk({'time': 12})
