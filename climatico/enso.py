@@ -135,15 +135,24 @@ class DefineNino:
         """
         return data.rolling(time=years*12, min_periods=1, center=centered).std()
 
-    def compute_index(self, data, climo, linear_detrend=False):
+    def compute_index(self, data, climo, linear_detrend=False, lat_name='TLAT'):
         """
-        Compute nino index (sst based).
+        Compute nino index (sst based). Inputs should be in (time, nlat, nlon) dims.
         Args:
-            data (xarray data array): Weighted mean variable.
-            climo (xarray data array): Monthly climatology.
+            data (xarray data array): SST data.
+            climo (xarray data array): Monthly climatology. E.g., output of monthly_climo_control.
+            linear_detrend (boolean): Whether to linearly detrend anomalies. Defaults to ``False``.
+            lat_name (str): Name of latitudes to use for weights in weighted average calculation. 
+                            Defaults to ``TLAT``.
+        Additional Notes (order of operations):
+            1. Subtract Nino region ssts and control run ssts.
+            2. Compute weighted average of anomalies for nino region.
+            3. (optional): Detrend anomalies.
+            4. Smooth anomalies.
+            5. Divide by standard deviation.
         """
         # create anomalies
-        anom = data - climo
+        anom = weighted_mean(data - climo, lat_name=lat_name)
         if linear_detrend:
             # if linearly detrending anomalies
             anom = xr.apply_ufunc(signal.detrend, anom.load())
@@ -160,7 +169,8 @@ class DefineNino:
 
     def grab_nino(self, ds, squeeze=True):
         """
-        Extract nino sst regions that were enso or not.
+        Extract nino sst region that exceed a set sst threshold for enso.
+        Note: Does not account for consecutive month exceedances. Use get_enso_grps instead!
         Args:
             ds (xarray dataset): SST data.
             squeeze (boolean): Whether to squeeze out any len == 1 dims. Defaults to ``True``.
@@ -185,6 +195,39 @@ class DefineNino:
         if self.enso_event == "neutral":
             enso_events = da.isel(time=np.where((index<self.cutoff)&(index>-self.cutoff))[0])
         return enso_events
+    
+    def get_enso_grps(self, array, thresh=0.5, Nmin=3):
+        """
+        Get ENSO events using consecutive anomaly exceedances.
+        Args:
+            array (numpy array): Nino index.
+            thresh (float): Threshold for ENSO event. 0.5 for ONI or 0.4 for Nino region.
+                            Defaults to ``0.5``.
+            Nmin (int) : Min number of consecutive values below threshold. Defaults to ``3``.
+                         Select ``5`` for Nino SST regions.
+        Returns:
+            nino index array with events enumerated as nino (even) or nina (odd), and pandas 
+            series of enumerated nino(a) events with associated duration.
+        """
+        assert (thresh > 0), "Make threshold positive value ( > 0 )."
+        assert (Nmin > 1), "Number of consecutive anomalies exceeding threshold must be greater than 1."
+        # convert to series for pandas use
+        s = pd.Series(array)
+        # nina
+        nina = np.logical_and.reduce([s.shift(-i).le(-thresh) for i in range(Nmin)])
+        nina = pd.Series(nina, index=s.index).replace({False: np.NaN}).ffill(limit=Nmin-1).fillna(False)
+        # nino
+        nino = np.logical_and.reduce([s.shift(-i).ge(thresh) for i in range(Nmin)])
+        nino = pd.Series(nino, index=s.index).replace({False: np.NaN}).ffill(limit=Nmin-1).fillna(False)
+        # Form consecutive groups
+        nina_gps = nina.ne(nina.shift(1)).cumsum().where(nina)
+        nino_gps = nino.ne(nino.shift(1)).cumsum().where(nino)
+        # Return None if no groups, else the aggregations
+        if nino_gps.isnull().all():
+            print("No nino events")
+        if nina_gps.isnull().all():
+            print("No nina events")
+        return np.array(nino_gps), np.array(nina_gps), s.groupby(nino_gps).agg(['size']), s.groupby(nina_gps).agg(['size'])
 
     def check_nino(self, data):
         """
