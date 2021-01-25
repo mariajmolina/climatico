@@ -17,8 +17,8 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 ;************************************************
 ;begin
 
-  in  = addfile("/glade/scratch/molina/amoc_exp/b.e11.B1850LENS.f09_g16.FWAtSalP04Sv.pop.h.SST.070101-075012.nc","r")
-  printVarSummary(in)
+  in  = addfile("/glade/scratch/molina/amoc_exp/b.e11.B1850LENS.f09_g16.FWPaSalP04Sv.pop.h.SST.025101-030012.nc","r")
+  ;printVarSummary(in)
   sst = in->SST
   ;printVarSummary(sst)
 
@@ -30,7 +30,8 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
   ;printVarSummary(remap)
 
   ;system("/bin/rm -f simple.nc")   ; remove any pre-existing file
-  ncdf = addfile("simple3.nc" ,"c")  ; open output netCDF file
+  
+  ncdf = addfile("/glade/scratch/molina/amoc_exp/b1d.e11.B1850LENS.f09_g16.FWPaSalP04Sv.pop.h.SST.025101-030012.nc" ,"c")  ; open output netCDF file
 
 ;===================================================================
 ; output variables directly; NCL will call appropriate functions
