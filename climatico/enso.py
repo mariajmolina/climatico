@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
-from util import pacific_lon, weighted_mean
+from climatico.util import pacific_lon, weighted_mean
 import matplotlib.pyplot as plt
 import warnings
 from scipy import signal
