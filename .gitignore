@@ -1,11 +1,14 @@
 /climatico/*.ipynb
 */config.py
+notebooks/figures/config.py
 /climatico/*.pbs
+/scripts/*.pbs
 /ncl/*.nc
 !map_1x1d_to_gx1v6_bilin_da_100716.nc
 !map_gx1v6_to_1x1d_bilin_da_100716.nc
 /ncl/*.png
 climatico/__pycache__/
+notebooks/figures/__pycache__/
 /*/core-*
 build/*
 dist/*
