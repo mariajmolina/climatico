@@ -8,6 +8,7 @@ notebooks/figures/config.py
 !map_gx1v6_to_1x1d_bilin_da_100716.nc
 /ncl/*.png
 climatico/__pycache__/
+notebooks/__pycache__/
 notebooks/figures/__pycache__/
 /*/core-*
 build/*
