@@ -78,7 +78,7 @@ class DefineNino:
         Args:
             data (xarray dataset): SST data.
         """
-        return data.where((ds[self.lats]<5) & (ds[self.lats]>-5) & (ds[self.lons]>165) & (ds[self.lons]<-90+360), drop=True)
+        return data.where((data[self.lats]<5) & (data[self.lats]>-5) & (data[self.lons]>165) & (data[self.lons]<-90+360), drop=True)
 
     def roll_climo(self, data, month, yrsroll=30, centered=True, time='time'):
         """
