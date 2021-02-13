@@ -68,6 +68,17 @@ class DefineNino:
         nino_coords = self.nino_dict()
         return data.where((data[self.lats]<nino_coords[1]) & (data[self.lats]>nino_coords[0]) & \
                           (data[self.lons]>nino_coords[2]) & (data[self.lons]<nino_coords[3]), drop=True)
+    
+    def pacific_slab_slice(self, data):
+        """
+        Extract equatorial Pacific region for computing horizontal mean to visualize vertical ``slab.``
+        Note: Ocean CESM model (pop) uses irregular grid. Therefore, 
+              lat and lon coordinates have two dimensions, and should
+              be specified in function input.
+        Args:
+            data (xarray dataset): SST data.
+        """
+        return data.where((ds[self.lats]<5) & (ds[self.lats]>-5) & (ds[self.lons]>165) & (ds[self.lons]<-90+360), drop=True)
 
     def roll_climo(self, data, month, yrsroll=30, centered=True, time='time'):
         """
