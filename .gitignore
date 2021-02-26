@@ -9,6 +9,7 @@ notebooks/figures/config.py
 /ncl/*.png
 climatico/__pycache__/
 notebooks/__pycache__/
+isotherm/__pycache__/
 notebooks/figures/__pycache__/
 /*/core-*
 build/*
