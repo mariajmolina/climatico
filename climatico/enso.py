@@ -146,15 +146,24 @@ class DefineNino:
         """
         return data.rolling(time=years*12, min_periods=1, center=centered).std()
 
-    def compute_index(self, data, climo, linear_detrend=False, lat_name='TLAT'):
+    def compute_index(self, data, climo, linear_detrend=False, lat_name='TLAT', 
+                      output_std=False, input_std=None,
+                      custom_std=False, first_threshold=100, last_threshold=900):
         """
         Compute nino index (sst based). Inputs should be in (time, nlat, nlon) dims.
+        
         Args:
             data (xarray data array): SST data.
             climo (xarray data array): Monthly climatology. E.g., output of monthly_climo_control.
             linear_detrend (boolean): Whether to linearly detrend anomalies. Defaults to ``False``.
             lat_name (str): Name of latitudes to use for weights in weighted average calculation. 
                             Defaults to ``TLAT``.
+            output_std (boolean): Output std value to use later. Defaults to ``False``.
+            input_std (float): Std to use on appended control data. Defaults to ``None``.
+            custom_std (boolean): Application of standard deviation using custom range. Defaults to ``False``.
+            first_threshold (int): Number of years for ``custom_std``. Defaults to ``100``.
+            last_threshold (int): Last year of data. Defaults to ``900`` (e.g, control + experiment).
+        
         Additional Notes (order of operations):
             1. Subtract Nino region ssts and control run ssts.
             2. Compute weighted average of anomalies for nino region.
@@ -172,10 +181,20 @@ class DefineNino:
             anom = anom.chunk({'time': 12})
         # apply running mean onto anomalies
         anom_rolling = anom.rolling(time=self.runningmean, min_periods=1, center=False).mean()
-        # extract standard deviation
-        std = anom_rolling.std()
         # standardize rolled anoms
-        nino_index = (anom_rolling / std)
+        if not custom_std:
+            nino_index = (anom_rolling / anom_rolling.std())
+            if output_std:
+                std_val = anom_rolling.std()
+                return nino_index, std_val
+        if custom_std:
+            nino_index = xr.concat([
+                               anom_rolling.isel(
+                                   time=slice(0, first_threshold * 12)) / input_std,
+                               anom_rolling.isel(
+                                   time=slice(first_threshold * 12, last_threshold * 12)) / anom_rolling.isel(
+                                   time=slice(first_threshold * 12, last_threshold * 12)).std()], 
+                               dim='time')
         return nino_index
 
     def grab_nino(self, ds, squeeze=True):
