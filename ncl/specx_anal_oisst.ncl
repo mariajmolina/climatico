@@ -60,27 +60,48 @@ begin
    
    sdof         = 2/tapcf*sum(wgts^2)   ; sum squares of normalized wgts to calculate dof. bw: jones pg 202: murphy+katz
    
-   system ("rm ~/python_scripts/climatico/ncl/spcx10.nc")            ; remove any pre-existing file
-   ncdf = addfile("~/python_scripts/climatico/ncl/spcx10.nc" , "c")  ; open output netCDF file
-   ncdf->spcx  = spcx   
+   sdof         = 2/(tapcf*sum(wgts^2))
    
-   system ("rm ~/python_scripts/climatico/ncl/frq10.nc")            ; remove any pre-existing file
-   ncdf = addfile("~/python_scripts/climatico/ncl/frq10.nc" , "c")  ; open output netCDF file
+   sdof@bw      = 0.5*sdof*df
+   sdof@xvari   = xVari
+   sdof@xvaro   = xVaro
+   sdof@frq     = frq
+   sdof@spcx    = spcx
+   acr          = esacr(x,1)
+   sdof@xlag1   = acr(1)
+   
+   system ("rm ~/python_scripts/climatico/ncl/spcx.nc")            ; remove any pre-existing file
+   ncdf = addfile("~/python_scripts/climatico/ncl/spcx.nc" , "c")  ; open output netCDF file
+   ncdf->spcx  = spcx  
+   printVarSummary(spcx)
+   
+   system ("rm ~/python_scripts/climatico/ncl/frq.nc")            ; remove any pre-existing file
+   ncdf = addfile("~/python_scripts/climatico/ncl/frq.nc" , "c")  ; open output netCDF file
    ncdf->frq   = frq
+   printVarSummary(frq)
    
    return( sdof )
 end
    
 diri  = "~/python_scripts/climatico/ncl/"
 
-fili  = "dummy10.nc"
+fili  = "box_sst.nc"
 
 in    = addfile(diri+fili,"r")
 SST   = in->SST
 
 iopt  = 1    ; remove series mean
 ;jave  = 7    ; 
-jave  = 3    ; for oisst
+jave  = 3    ; for oisst -- confirmed!
 pct   = 0.1  ; taper 10% of the data
 
 spec = SPECX_ANAL (SST,iopt,jave,pct)
+
+;wks  = gsn_open_wks("png","spec")               ; send graphics to PNG file 
+
+;res = True                              ; plot mods desired
+;res@tiMainString = "SSTs Nino3.4 G2Sv (yrs 200-500)"                ; title
+;res@tiXAxisString = "Frequency (cycles/month)"  ; xaxis
+;res@tiYAxisString = "Variance"                  ; yaxis
+
+;plot=gsn_csm_xy(wks,spec@frq,spec@spcx,res)     ; create plot 

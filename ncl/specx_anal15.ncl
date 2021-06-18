@@ -79,7 +79,8 @@ in    = addfile(diri+fili,"r")
 SST   = in->SST
 
 iopt  = 1    ; remove series mean
-jave  = 7    ; 
+;jave  = 7    ; 
+jave  = 3    ; for oisst
 pct   = 0.1  ; taper 10% of the data
 
 spec = SPECX_ANAL (SST,iopt,jave,pct)

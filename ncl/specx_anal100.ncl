@@ -60,12 +60,12 @@ begin
    
    sdof         = 2/tapcf*sum(wgts^2)   ; sum squares of normalized wgts to calculate dof. bw: jones pg 202: murphy+katz
    
-   system ("rm ~/python_scripts/climatico/ncl/spcx10.nc")            ; remove any pre-existing file
-   ncdf = addfile("~/python_scripts/climatico/ncl/spcx10.nc" , "c")  ; open output netCDF file
+   system ("rm ~/python_scripts/climatico/ncl/spcx100.nc")            ; remove any pre-existing file
+   ncdf = addfile("~/python_scripts/climatico/ncl/spcx100.nc" , "c")  ; open output netCDF file
    ncdf->spcx  = spcx   
    
-   system ("rm ~/python_scripts/climatico/ncl/frq10.nc")            ; remove any pre-existing file
-   ncdf = addfile("~/python_scripts/climatico/ncl/frq10.nc" , "c")  ; open output netCDF file
+   system ("rm ~/python_scripts/climatico/ncl/frq100.nc")            ; remove any pre-existing file
+   ncdf = addfile("~/python_scripts/climatico/ncl/frq100.nc" , "c")  ; open output netCDF file
    ncdf->frq   = frq
    
    return( sdof )
@@ -73,7 +73,7 @@ end
    
 diri  = "~/python_scripts/climatico/ncl/"
 
-fili  = "dummy10.nc"
+fili  = "dummy100.nc"
 
 in    = addfile(diri+fili,"r")
 SST   = in->SST
