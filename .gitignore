@@ -17,3 +17,4 @@ dist/*
 *egg-info/
 *.ipynb_checkpoints/
 scripts/__pycache__/
+climatico/annual_cycle.py
