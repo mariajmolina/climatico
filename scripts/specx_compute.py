@@ -129,7 +129,10 @@ def oisst_latlon(block_value):
         lats1 = 240; lats2 = 480; lons1 = 480; lons2 = 720
     
     if block_value == 10:
-        lats1 = 240; lats2 = 480; lons1 = 720; lons2 = 960
+        lats1 = 240; lats2 = 360; lons1 = 720; lons2 = 840
+        
+    if block_value == 100:
+        lats1 = 360; lats2 = 480; lons1 = 840; lons2 = 960
     
     if block_value == 11:
         lats1 = 240; lats2 = 480; lons1 = 960; lons2 = 1200
