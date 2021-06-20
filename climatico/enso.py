@@ -49,6 +49,8 @@ class DefineNino:
              'nino4': np.array([-5, 5, pacific_lon(160, to180=False), pacific_lon(-150, to180=False)]),
              'atl3': np.array([-3, 3, pacific_lon(-20, to180=False), pacific_lon(0, to180=False)]),
              'pacslab': np.array([-10, 10, pacific_lon(160, to180=False), pacific_lon(-80, to180=False)]),
+             'pacitcz': np.array([-10, 20, pacific_lon(170, to180=False), pacific_lon(-90, to180=False)]),
+             'atlitcz': np.array([-15, 20, pacific_lon(-35, to180=False), pacific_lon(-15, to180=False)]),
             }
         try:
             out = n[self.ninodefined]
