@@ -272,7 +272,7 @@ class DefineNino:
             
         return enso_events
     
-    def get_enso_grps(self, array, thresh=0.5, Nmin=3):
+    def get_enso_grps(self, array, thresh=0.5, Nmin=5):
         """
         Get ENSO events using consecutive anomaly exceedances.
         
@@ -280,8 +280,8 @@ class DefineNino:
             array (numpy array): Nino index.
             thresh (float): Threshold for ENSO event. 0.5 for ONI or 0.4 for Nino region.
                             Defaults to ``0.5``.
-            Nmin (int) : Min number of consecutive values below threshold. Defaults to ``3``.
-                         Select ``5`` for Nino SST regions.
+            Nmin (int) : Min number of consecutive values below threshold.
+                         Defaults to ``5`` for Nino SST regions.
                          
         Returns:
             nino index array with events enumerated as nino (even) or nina (odd), and pandas 
@@ -378,7 +378,7 @@ class DefineNino:
 
         while num < len(ensolist):
 
-            if ensolist[num] >= 0.5:            # if nino
+            if ensolist[num] >= 0.5:                # if nino
 
                 try:
 
@@ -389,7 +389,7 @@ class DefineNino:
 
                         if ensolist[num] < 0.5:     # if no longer nino
 
-                            if j > 4:               # did nino occur for more than 5 mos?
+                            if j > 4:               # did nino occur for more than 4 mos?
                                 nino_counter += 1
                                 j = 0
 
@@ -400,14 +400,14 @@ class DefineNino:
 
                 except IndexError:
 
-                    if j > 4:               # did nino occur for more than 5 mos?
+                    if j > 4:                       # did nino occur for more than 4 mos?
                         nino_counter += 1
                         j = 0
 
                     elif j < 5:
                         j = 0
 
-            elif ensolist[num] <= -0.5:         # if nina
+            elif ensolist[num] <= -0.5:             # if nina
 
                 try:
 
@@ -418,7 +418,7 @@ class DefineNino:
 
                         if ensolist[num] > -0.5:    # if no longer nina
 
-                            if j > 4:               # did nina occur for more than 5 mos?
+                            if j > 4:               # did nina occur for more than 4 mos?
                                 nina_counter += 1
                                 j = 0
 
@@ -429,17 +429,101 @@ class DefineNino:
 
                 except IndexError:
 
-                    if j > 4:               # did nina occur for more than 5 mos?
+                    if j > 4:                       # did nina occur for more than 4 mos?
                         nina_counter += 1
                         j = 0
 
                     elif j < 5:
                         j = 0
 
-            else:                               # neutral
+            else:                                   # neutral
                 num += 1
 
         return nino_counter, nina_counter
+    
+    def enso_data_indices(self, ensolist):
+        """
+        Extract indices of ENSO events in data.
+
+        Args:
+            ensolist: array
+
+        Returns:
+            nino_, nina_: array of data indices for enso events.
+        """
+        nino_ = []
+        nina_ = []
+        nino_counter = 0
+        nina_counter = 0
+        num = 0
+        j   = 0
+
+        while num < len(ensolist):
+
+            if ensolist[num] >= 0.5:                # if nino
+
+                try:
+
+                    while ensolist[num] >= 0.5:     # while nino continues
+
+                        nino_.append(num)
+                        num += 1
+                        j += 1                      # count nino events
+
+                        if ensolist[num] < 0.5:     # if no longer nino
+
+                            if j > 4:               # did nino occur for more than 4 mos?
+                                nino_counter += 1
+                                j = 0
+
+                            elif j < 5:
+                                j = 0
+
+                            break
+
+                except IndexError:
+
+                    if j > 4:                       # did nino occur for more than 4 mos?
+                        nino_counter += 1
+                        j = 0
+
+                    elif j < 5:
+                        j = 0
+
+            elif ensolist[num] <= -0.5:             # if nina
+
+                try:
+
+                    while ensolist[num] <= -0.5:    # while nina continues
+
+                        nina_.append(num)
+                        num += 1
+                        j += 1                      # count nina events
+
+                        if ensolist[num] > -0.5:    # if no longer nina
+
+                            if j > 4:               # did nina occur for more than 4 mos?
+                                nina_counter += 1
+                                j = 0
+
+                            elif j < 5:
+                                j = 0
+
+                            break
+
+                except IndexError:
+
+                    if j > 4:                       # did nina occur for more than 4 mos?
+                        nina_counter += 1
+                        j = 0
+
+                    elif j < 5:
+                        j = 0
+
+            else:                                   # neutral
+                num += 1
+
+        return np.array(nino_), np.array(nina_)
 
     def fast_plot(self, index):
         """
