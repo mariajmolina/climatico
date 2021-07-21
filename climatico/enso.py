@@ -9,6 +9,7 @@ from scipy import signal
 class DefineNino:
     """
     Class instantiation of DefineNino.
+    
     Args:
         nino (str): Nino SST region in Pacific (all lowercase). E.g., ``nino34``.
                     Options include nino12, nino3, nino34, nino4, atl3.
@@ -40,6 +41,7 @@ class DefineNino:
     def nino_dict(self):
         """
         Help to grab Nino region coords for SST bounds.
+        
         Note: Longitudes in CESM ocean model output are in 360 degree coords.
         """
         n = {
@@ -53,32 +55,38 @@ class DefineNino:
              'npacitcz': np.array([-3, 20, pacific_lon(170, to180=False), pacific_lon(-90, to180=False)]),
              'atlitcz': np.array([-15, 20, pacific_lon(-35, to180=False), pacific_lon(-15, to180=False)]),
             }
+        
         try:
             out = n[self.ninodefined]
             return out
+        
         except:
             raise ValueError('Not a Nino SST region! Make sure input is all lowercase.')
 
     def nino(self, data):
         """
-        Using Nino regional bounds in the Pacific for SST extraction from
-        nino_dict().
+        Using Nino regional bounds in the Pacific for SST extraction from nino_dict().
+        
         Note: Ocean CESM model (pop) uses irregular grid. Therefore, 
               lat and lon coordinates have two dimensions, and should
               be specified in function input.
+              
         Args:
             data (xarray dataset): SST data.
         """
         nino_coords = self.nino_dict()
+        
         return data.where((data[self.lats]<nino_coords[1]) & (data[self.lats]>nino_coords[0]) & \
                           (data[self.lons]>nino_coords[2]) & (data[self.lons]<nino_coords[3]), drop=True)
     
     def pacific_slab_slice(self, data):
         """
         Extract equatorial Pacific region for computing horizontal mean to visualize vertical ``slab.``
+        
         Note: Ocean CESM model (pop) uses irregular grid. Therefore, 
               lat and lon coordinates have two dimensions, and should
               be specified in function input.
+              
         Args:
             data (xarray dataset): SST data.
         """
@@ -87,6 +95,7 @@ class DefineNino:
     def roll_climo(self, data, month, yrsroll=30, centered=True, time='time'):
         """
         Creating rolling 30-year mean climatology.
+        
         Args:
             data (xarray dataarray): Data Array weighted mean already computed.
             month (int): Month for climatology.
@@ -100,17 +109,21 @@ class DefineNino:
         """
         Create rolling mean climatology. 
         Performs what xr.DataArray.groupby('time.month').rolling() would do.
+        
         Args:
             data (xarray data array): Weighted mean variable.
             yrsroll (int): Number of years for climatology. Defaults to ``30``.
             centered (boolean): Whether the average is centered. Defaults to ``True``.
             time (str): Time coordinate name. Defaults to ``time``.
+            
         Returns:
             nino_climo with rolling mean computed along months.
         """
         with warnings.catch_warnings():
+            
             # ignore computer performance warning here on chunks
             warnings.simplefilter("ignore")
+            
             jan = self.roll_climo(data, month=1, yrsroll=yrsroll, centered=centered, time=time)
             feb = self.roll_climo(data, month=2, yrsroll=yrsroll, centered=centered, time=time)
             mar = self.roll_climo(data, month=3, yrsroll=yrsroll, centered=centered, time=time)
@@ -123,14 +136,18 @@ class DefineNino:
             boo = self.roll_climo(data, month=10, yrsroll=yrsroll, centered=centered, time=time)
             nov = self.roll_climo(data, month=11, yrsroll=yrsroll, centered=centered, time=time)
             dec = self.roll_climo(data, month=12, yrsroll=yrsroll, centered=centered, time=time)
+            
             nino_climo = xr.concat([jan,feb,mar,apr,may,jun,jul,aug,sep,boo,nov,dec], dim=time).sortby(time)
+            
         return nino_climo
 
     def monthly_climo_control(self, data):
         """
         Create fixed mean climatology.
+        
         Args:
             data (xarray data array): Weighted mean variable.
+            
         Returns:
             Fixed period weighted mean climatology.
         """
@@ -139,10 +156,12 @@ class DefineNino:
     def nino_variance(self, data, years=30, centered=True):
         """
         Compute Nino index variance from monthly index.
+        
         Note: 
             Chunking issues arise with this function sometimes, particularly with long
             simulations. Use ``.chunk({'time': 1200})`` when feeding data into this
             function if chunking issues come up.
+            
         Args:
             data (xarray data array): Nino index. 
             years (int): Number of years for running window for variance calculation.
@@ -177,21 +196,32 @@ class DefineNino:
         """
         # create anomalies
         anom = weighted_mean(data - climo, lat_name=lat_name)
+        
         if linear_detrend:
+            
             # if linearly detrending anomalies
             anom = xr.apply_ufunc(signal.detrend, anom.load())
+            
         if self.runningmean == 5:
             # for performance
             anom = anom.chunk({'time': 12})
+            
         # apply running mean onto anomalies
         anom_rolling = anom.rolling(time=self.runningmean, min_periods=1, center=False).mean()
+        
         # standardize rolled anoms
         if not custom_std:
+            
             nino_index = (anom_rolling / anom_rolling.std())
+            
             if output_std:
+                
                 std_val = anom_rolling.std()
+                
                 return nino_index, std_val
+            
         if custom_std:
+            
             nino_index = xr.concat([
                                anom_rolling.isel(
                                    time=slice(0, first_threshold * 12)) / input_std,
@@ -199,111 +229,222 @@ class DefineNino:
                                    time=slice(first_threshold * 12, last_threshold * 12)) / anom_rolling.isel(
                                    time=slice(first_threshold * 12, last_threshold * 12)).std()], 
                                dim='time')
+            
         return nino_index
 
     def grab_nino(self, ds, squeeze=True):
         """
         Extract nino sst region that exceed a set sst threshold for enso.
+        
         Note: Does not account for consecutive month exceedances. Use get_enso_grps instead!
+        
         Args:
             ds (xarray dataset): SST data.
             squeeze (boolean): Whether to squeeze out any len == 1 dims. Defaults to ``True``.
         """
         # slice sst data for respective nino region
         ds = self.nino(ds)
+        
         if squeeze:
             da = ds.squeeze()
+            
         # compute weighted mean of sst region
         nino_mean = weighted_mean(da[self.sst_name], lat_name=self.lats)
+        
         # compute monthly climo (running centered 30-yr mean)
         climo = self.monthly_climo(nino_mean, yrsroll=30, centered=True)
+        
         # compute the respective nino index
         index = self.compute_index(data=nino_mean, climo=climo)
+        
         # eagerly load data for more speed later
         index = index.values
+        
         # extract enso events
         if self.enso_event == "nino":
             enso_events = da.isel(time=np.where(index>=self.cutoff)[0])
+            
         if self.enso_event == "nina":
             enso_events = da.isel(time=np.where(index<=-self.cutoff)[0])
+            
         if self.enso_event == "neutral":
             enso_events = da.isel(time=np.where((index<self.cutoff)&(index>-self.cutoff))[0])
+            
         return enso_events
     
     def get_enso_grps(self, array, thresh=0.5, Nmin=3):
         """
         Get ENSO events using consecutive anomaly exceedances.
+        
         Args:
             array (numpy array): Nino index.
             thresh (float): Threshold for ENSO event. 0.5 for ONI or 0.4 for Nino region.
                             Defaults to ``0.5``.
             Nmin (int) : Min number of consecutive values below threshold. Defaults to ``3``.
                          Select ``5`` for Nino SST regions.
+                         
         Returns:
             nino index array with events enumerated as nino (even) or nina (odd), and pandas 
             series of enumerated nino(a) events with associated duration.
         """
         assert (thresh > 0), "Make threshold positive value ( > 0 )."
         assert (Nmin > 1), "Number of consecutive anomalies exceeding threshold must be greater than 1."
+        
         # convert to series for pandas use
         s = pd.Series(array)
+        
         # nina
         nina = np.logical_and.reduce([s.shift(-i).le(-thresh) for i in range(Nmin)])
         nina = pd.Series(nina, index=s.index).replace({False: np.NaN}).ffill(limit=Nmin-1).fillna(False)
+        
         # nino
         nino = np.logical_and.reduce([s.shift(-i).ge(thresh) for i in range(Nmin)])
         nino = pd.Series(nino, index=s.index).replace({False: np.NaN}).ffill(limit=Nmin-1).fillna(False)
+        
         # Form consecutive groups
         nina_gps = nina.ne(nina.shift(1)).cumsum().where(nina)
         nino_gps = nino.ne(nino.shift(1)).cumsum().where(nino)
+        
         # Return None if no groups, else the aggregations
         if nino_gps.isnull().all():
             print("No nino events")
+            
         if nina_gps.isnull().all():
             print("No nina events")
+            
         return np.array(nino_gps), np.array(nina_gps), s.groupby(nino_gps).agg(['size']), s.groupby(nina_gps).agg(['size'])
 
     def check_nino(self, data):
         """
         Quick sanity check function for regional bounds.
+        
         Args:
             data (xarray dataset): SST data.
         """
         print('Check we have the correct spatial extent')
+        
         print('Latitude range: {:.1f} - {:.1f}'.format(data[self.lats].min().values, 
                                                        data[self.lats].max().values))
+        
         print('Longitude range: {:.1f} - {:.1f}'.format(pacific_lon(data[self.lons].min().values), 
                                                         pacific_lon(data[self.lons].max().values)))
 
     def check_nino_percentages(self, index):
         """
         Check percent of data set that contains nino and nina events.
+        
         Args:
             index (numpy array): Index eagerly loaded as numpy array (for speed).
         """
         print("Percentage of El Nino events = {:0.1f}%".format(
             100 * np.around(np.count_nonzero((np.where(index>=self.cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
+        
         print("Percentage of La Nina events = {:0.1f}%".format(
             100 * np.around(np.count_nonzero((np.where(index<=-self.cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
 
     def check_strong_nino(self, index):
         """
         Check percent of data set that contains strong nino and nina events.
+        
         Args:
             index (numpy array): Index eagerly loaded as numpy array (for speed).
         """
         print("Percentage of Strong El Nino events = {:0.1f}%".format(
             100 * np.around(np.count_nonzero((np.where(index>=self.strong_cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
+        
         print("Percentage of Strong La Nina events = {:0.1f}%".format(
             100 * np.around(np.count_nonzero((np.where(index<=-self.strong_cutoff, 1, 0))) / np.count_nonzero(~np.isnan(index)),2)))
+        
         print("Percentage of Strong El Nino from All El Nino = {:0.1f}%".format(
             100 * (np.count_nonzero((np.where(index>=self.strong_cutoff, 1, 0))) / np.count_nonzero((np.where(index>=self.cutoff, 1, 0))))))
+        
         print("Percentage of Strong La Nina from All La Nina = {:0.1f}%".format(
             100 * (np.count_nonzero((np.where(index<=-self.strong_cutoff, 1, 0))) / np.count_nonzero((np.where(index<=-self.cutoff, 1, 0))))))
+        
+    def enso_counter(self, ensolist):
+        """
+        Count ENSO events.
+
+        Args:
+            ensolist: array
+
+        Returns:
+            nino_counter, nina_counter: arrays of enso frequencies.
+        """
+        nino_counter = 0
+        nina_counter = 0
+        num = 0
+        j   = 0
+
+        while num < len(ensolist):
+
+            if ensolist[num] >= 0.5:            # if nino
+
+                try:
+
+                    while ensolist[num] >= 0.5:     # while nino continues
+
+                        num += 1
+                        j += 1                      # count nino events
+
+                        if ensolist[num] < 0.5:     # if no longer nino
+
+                            if j > 4:               # did nino occur for more than 5 mos?
+                                nino_counter += 1
+                                j = 0
+
+                            elif j < 5:
+                                j = 0
+
+                            break
+
+                except IndexError:
+
+                    if j > 4:               # did nino occur for more than 5 mos?
+                        nino_counter += 1
+                        j = 0
+
+                    elif j < 5:
+                        j = 0
+
+            elif ensolist[num] <= -0.5:         # if nina
+
+                try:
+
+                    while ensolist[num] <= -0.5:    # while nina continues
+
+                        num += 1
+                        j += 1                      # count nina events
+
+                        if ensolist[num] > -0.5:    # if no longer nina
+
+                            if j > 4:               # did nina occur for more than 5 mos?
+                                nina_counter += 1
+                                j = 0
+
+                            elif j < 5:
+                                j = 0
+
+                            break
+
+                except IndexError:
+
+                    if j > 4:               # did nina occur for more than 5 mos?
+                        nina_counter += 1
+                        j = 0
+
+                    elif j < 5:
+                        j = 0
+
+            else:                               # neutral
+                num += 1
+
+        return nino_counter, nina_counter
 
     def fast_plot(self, index):
         """
         Quick visualization of index.
+        
         Args:
             index (numpy array): Index eagerly loaded as numpy array (for speed).
         """
@@ -321,6 +462,7 @@ class DefineNino:
                     add_yr_lines=None):
         """
         Quick shaded visualization of index.
+        
         Args:
             index (numpy array): Index eagerly loaded as numpy array (for speed).
             title (str): Title for the figure.
@@ -331,36 +473,51 @@ class DefineNino:
                                   Defaults to ``None``. Should be e.g., ``[6000]``.
         """
         fig = plt.figure(figsize=(12, 8))
+        
         # nino shade
         plt.fill_between(range(index.shape[0]), np.where(index>=self.cutoff,index,np.nan), self.cutoff, color='r', alpha=0.8)
+        
         # nina shade
         plt.fill_between(range(index.shape[0]), np.where(index<=-self.cutoff,index,np.nan), -self.cutoff, color='b', alpha=0.3)
+        
         # plot index
         plt.plot(index, c='k', lw=0.15)
+        
         # plot 0 anom line (horizontal)
         plt.axhline(0,color='black',lw=0.5)
+        
         # plot nino threshold
         plt.axhline(self.cutoff,color='black',linewidth=0.5,linestyle='dotted')
+        
         # plot nina threshold
         plt.axhline(-self.cutoff,color='black',linewidth=0.5,linestyle='dotted')
+        
         # plot strong nino threshold
         plt.axhline(self.strong_cutoff,color='black',linewidth=0.25,linestyle='dotted')
+        
         # plot strong nina threshold
         plt.axhline(-self.strong_cutoff,color='black',linewidth=0.25,linestyle='dotted')
+        
         # plot labels
         plt.xticks(xticks, xticklabels)
         plt.xlabel('Years')
         plt.ylabel('Index')
+        
         if add_yr_lines:
+            
             # adding vertical lines 
             for flux in add_yr_lines:
                 plt.axvline(flux, color='k', lw=1.5)
+                
         if title:
             plt.title(title)
+            
         plt.margins(x=0)
+        
         if savefig:
             plt.savefig(savefig, bbox_inches='tight', dpi=200)
             return plt.show()
+        
         if not savefig:
             return plt.show()
 
@@ -369,6 +526,7 @@ class DefineNino:
                     add_yr_lines=None):
         """
         Cumulative sum of El Nino, La Nino, and Neutral events over the index data.
+        
         Args:
             index (numpy array): Index eagerly loaded as numpy array (for speed).
             title (str): Title for the figure. Defaults to None.
@@ -379,27 +537,38 @@ class DefineNino:
                                   Defaults to ``None``. Should be e.g., ``[6000]``.
         """
         fig = plt.figure(figsize=(10, 6))
+        
         ax = plt.axes([0.,0.,1.,1.])
+        
         # nino cumulative sum
         ax.plot(np.cumsum(np.where(index>=self.cutoff, 1, 0)), c='r')
+        
         # nina cumulative sum
         ax.plot(np.cumsum(np.where(index<=-self.cutoff, 1, 0)), c='b')
+        
         # neutral cumulative sum
         ax.plot(np.cumsum(np.where((index<self.cutoff)&(index>-self.cutoff), 1, 0)), c='k')
+        
         # labels
         ax.set_xticks(xticks)
         ax.set_xticklabels(xticklabels)
         ax.set_xlabel('Years')
         ax.set_ylabel('Index')
+        
         if add_yr_lines:
+            
             # vertical lines
             for flux in add_yr_lines:
                 ax.axvline(flux, color='k', lw=1.5)
+                
         if title:
             ax.set_title(title)
+            
         ax.margins(x=0)
+        
         if savefig:
             plt.savefig(savefig, bbox_inches='tight', dpi=200)
             return plt.show()
+        
         if not savefig:
             return plt.show()
