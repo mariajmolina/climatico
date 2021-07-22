@@ -453,8 +453,6 @@ class DefineNino:
         """
         nino_ = []
         nina_ = []
-        nino_counter = 0
-        nina_counter = 0
         num = 0
         j   = 0
 
@@ -462,18 +460,20 @@ class DefineNino:
 
             if ensolist[num] >= 0.5:                # if nino
 
+                temp = []
+
                 try:
 
                     while ensolist[num] >= 0.5:     # while nino continues
 
-                        nino_.append(num)
+                        temp.append(num)            # temporary record of indx
                         num += 1
                         j += 1                      # count nino events
 
                         if ensolist[num] < 0.5:     # if no longer nino
 
                             if j > 4:               # did nino occur for more than 4 mos?
-                                nino_counter += 1
+                                nino_.append(temp)
                                 j = 0
 
                             elif j < 5:
@@ -484,7 +484,7 @@ class DefineNino:
                 except IndexError:
 
                     if j > 4:                       # did nino occur for more than 4 mos?
-                        nino_counter += 1
+                        nino_.append(temp)
                         j = 0
 
                     elif j < 5:
@@ -492,18 +492,20 @@ class DefineNino:
 
             elif ensolist[num] <= -0.5:             # if nina
 
+                temp = []
+
                 try:
 
                     while ensolist[num] <= -0.5:    # while nina continues
 
-                        nina_.append(num)
+                        temp.append(num)            # temporary record of indx
                         num += 1
                         j += 1                      # count nina events
 
                         if ensolist[num] > -0.5:    # if no longer nina
 
                             if j > 4:               # did nina occur for more than 4 mos?
-                                nina_counter += 1
+                                nina_.append(temp)
                                 j = 0
 
                             elif j < 5:
@@ -514,7 +516,7 @@ class DefineNino:
                 except IndexError:
 
                     if j > 4:                       # did nina occur for more than 4 mos?
-                        nina_counter += 1
+                        nina_.append(temp)
                         j = 0
 
                     elif j < 5:
@@ -523,8 +525,11 @@ class DefineNino:
             else:                                   # neutral
                 num += 1
 
-        return np.array(nino_), np.array(nina_)
+        nino_ = np.array([a for b in nino_ for a in b])
+        nina_ = np.array([a for b in nina_ for a in b])
 
+        return nino_, nina_
+    
     def fast_plot(self, index):
         """
         Quick visualization of index.
